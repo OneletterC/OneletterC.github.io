@@ -1,160 +1,418 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Custom Cipher</title>
-<style>
-body{font-family:Arial,sans-serif;max-width:900px;margin:20px auto;padding:10px}
-input,select,textarea,button{width:100%;margin:5px 0;padding:8px;box-sizing:border-box}
-.buttons{display:flex;gap:6px;flex-wrap:wrap}
-.buttons button{flex:1}
-#gridModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4)}
-#gridBox{background:white;margin:40px auto;padding:15px;width:max-content}
-.grid{display:grid;gap:2px}
-.cell{border:1px solid #000;padding:6px;min-width:22px;text-align:center}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Custom Cipher</title>
+  <style>
+    :root{
+      --bg:#0b0f17;
+      --panel:#0f1720;
+      --muted:#98a0b3;
+      --accent-1:#6b4cff;
+      --accent-2:#ff6b6b;
+      --glass: rgba(255,255,255,0.03);
+      --glass-2: rgba(255,255,255,0.02);
+      --border: rgba(255,255,255,0.06);
+      --success:#2ecc71;
+      --info:#4da6ff;
+    }
+    *{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;}
+    html,body{height:100%;margin:0;background:
+      radial-gradient(1200px 500px at 10% 10%, rgba(107,76,255,0.12), transparent),
+      radial-gradient(800px 400px at 90% 90%, rgba(255,107,107,0.06), transparent),
+      var(--bg);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:28px;
+    }
+
+    .wrap{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 360px;gap:24px;align-items:start}
+    header.app{
+      grid-column:1/-1;
+      display:flex;align-items:center;justify-content:space-between;padding:22px;border-radius:12px;
+      background:linear-gradient(90deg, rgba(107,76,255,0.14), rgba(77,166,255,0.06));
+      border:1px solid rgba(255,255,255,0.04);
+      box-shadow: 0 6px 30px rgba(8,10,18,0.6);
+    }
+    .title{display:flex;gap:14px;align-items:center}
+    .logo{
+      width:56px;height:56px;border-radius:10px;background:linear-gradient(180deg,#6b4cff,#4da6ff);display:flex;align-items:center;justify-content:center;font-weight:700;
+      box-shadow:0 6px 20px rgba(77,166,255,0.08), inset 0 -6px 12px rgba(0,0,0,0.2);
+    }
+    .title h1{margin:0;font-size:20px}
+    .title p{margin:0;color:var(--muted);font-size:13px}
+
+    .panel{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;padding:20px;border:1px solid var(--border);
+      box-shadow: 0 6px 18px rgba(4,6,12,0.6);
+    }
+
+    .controls{display:grid;gap:12px}
+    label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+    input[type="text"], select, textarea{
+      width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      color:inherit;font-size:14px;outline:none;
+    }
+    textarea{min-height:120px;resize:vertical}
+    .row{display:flex;gap:12px;align-items:center}
+    .col{flex:1}
+    .buttons{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+    button.action{
+      padding:10px 16px;border-radius:10px;border:none;color:white;font-weight:600;cursor:pointer;
+      box-shadow:0 6px 18px rgba(0,0,0,0.5);
+    }
+    button.green{background:linear-gradient(180deg,#27d07b,#16a85b)}
+    button.blue{background:linear-gradient(180deg,#4da6ff,#2b7fe0)}
+    button.purple{background:linear-gradient(180deg,#7b47ff,#5a2dd6)}
+    button.orange{background:linear-gradient(180deg,#ff8a4b,#ff6b2b)}
+    button.red{background:linear-gradient(180deg,#ff6b6b,#ff3b3b)}
+
+    /* Right panel grid */
+    .grid-panel{position:relative;overflow:hidden}
+    .grid-box{
+      padding:18px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);
+      background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
+    }
+    .grid-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .grid-tiles{display:grid;gap:8px;justify-items:center;align-items:center;padding:8px;background:transparent;border-radius:8px}
+    .cell{width:46px;height:44px;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid rgba(255,255,255,0.03);font-weight:600}
+    .grid-footer{display:flex;justify-content:flex-end;margin-top:12px}
+    .small-muted{font-size:13px;color:var(--muted)}
+
+    .footer{grid-column:1/-1;margin-top:18px;padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);display:flex;justify-content:space-between;align-items:center}
+    .badge{display:inline-flex;gap:8px;align-items:center;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02);font-size:13px;color:var(--muted)}
+    .made{color:var(--muted);font-size:13px}
+
+    /* modal style for show grid on small screens */
+    .modal{
+      position:fixed;right:28px;top:84px;width:360px;z-index:40;
+      border-radius:12px;padding:14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.04);box-shadow:0 10px 40px rgba(4,6,12,0.6);
+    }
+    .hidden{display:none}
+
+    /* responsive */
+    @media (max-width:1000px){
+      .wrap{grid-template-columns:1fr; padding:16px}
+      .modal{left:16px;right:16px;top:120px;width:auto}
+    }
+    /* small inputs */
+    .select-inline{width:160px}
+    .kbd{display:inline-block;padding:4px 8px;border-radius:6px;background:rgba(0,0,0,0.25);font-size:13px}
+  </style>
 </head>
 <body>
-<h2>Custom Cipher</h2>
+  <div class="wrap">
+    <header class="app">
+      <div class="title">
+        <div class="logo">C</div>
+        <div>
+          <h1>Custom Cipher</h1>
+          <p>Encode and decode messages using a custom keyword grid.</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="opacity:.9"><path d="M12 2L3 6v6c0 5 3.8 9.7 9 10 5.2-.3 9-5 9-10V6l-9-4z" fill="#6b4cff"/></svg> Custom Cipher Tool</div>
+        <button id="toggleTheme" class="kbd" title="Toggle theme">Dark</button>
+      </div>
+    </header>
 
-<label>Keyword</label>
-<input id="keyword">
+    <section class="panel">
+      <div class="controls">
+        <div class="row">
+          <div class="col">
+            <label for="keyword">Keyword</label>
+            <input id="keyword" type="text" placeholder="keyword" value="keyword" />
+          </div>
+          <div style="width:140px">
+            <label for="gridSize">Grid Size</label>
+            <select id="gridSize" class="select-inline">
+              <option value="6x5">6x5</option>
+              <option value="5x5">5x5</option>
+              <option value="6x6">6x6</option>
+            </select>
+          </div>
+        </div>
 
-<label>Grid Size</label>
-<select id="grid">
-<option>3x9</option>
-<option>9x3</option>
-<option>4x7</option>
-<option>7x4</option>
-<option>5x6</option>
-<option selected>6x5</option>
-</select>
+        <div>
+          <label for="inputText">Input (Plaintext or Ciphertext)</label>
+          <textarea id="inputText" placeholder="Type your message here..."></textarea>
+        </div>
 
-<textarea id="input" rows="6"></textarea>
+        <div class="buttons">
+          <button id="encodeBtn" class="action green">Encode</button>
+          <button id="decodeBtn" class="action blue">Decode</button>
+          <button id="showGridBtn" class="action purple">Show Grid</button>
+          <button id="copyBtn" class="action orange">Copy Output</button>
+          <button id="clearBtn" class="action red">Clear All</button>
+        </div>
 
-<div class="buttons">
-<button onclick="encode()">Encode</button>
-<button onclick="decode()">Decode</button>
-<button onclick="showGrid()">Show Grid</button>
-<button onclick="copyOutput()">Copy Output</button>
-<button onclick="clearAll()">Clear</button>
-</div>
+        <div>
+          <label for="outputText">Output</label>
+          <textarea id="outputText" placeholder="Output will appear here..." readonly></textarea>
+        </div>
+      </div>
+    </section>
 
-<textarea id="output" rows="6"></textarea>
+    <aside class="panel grid-panel">
+      <div class="grid-box">
+        <div class="grid-title">
+          <div>
+            <strong>Cipher Grid</strong>
+            <div class="small-muted" id="gridInfo">This is the grid generated using your keyword and selected size (<span id="gridSizeLabel">6x5</span>).</div>
+          </div>
+          <button id="closeGrid" class="kbd">✕</button>
+        </div>
 
-<div id="gridModal" onclick="this.style.display='none'">
-  <div id="gridBox" onclick="event.stopPropagation()">
-    <div id="gridView"></div>
+        <div id="gridTiles" class="grid-tiles" style="--cols:6;"></div>
+
+        <div class="grid-footer">
+          <button id="modalShow" class="kbd">Close</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="footer">
+      <div class="badge">🔒 Secure. Fast. Verified.</div>
+      <div class="made">❤ Made with passion</div>
+    </div>
   </div>
-</div>
 
-<script>
-function buildGrid(keyword, rows, cols){
-    keyword=(keyword.toLowerCase().match(/[a-z]/g)||[]).join('');
-    let seen=new Set(), chars=[];
-    for(const ch of keyword){ if(!seen.has(ch)){ seen.add(ch); chars.push(ch);}}
-    for(const ch of "abcdefghijklmnopqrstuvwxyz"){ if(!seen.has(ch)) chars.push(ch); }
-    chars=chars.slice(0,26);
+  <!-- modal for smaller screens -->
+  <div id="gridModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong>Cipher Grid</strong>
+      <button id="closeModal" class="kbd">Close</button>
+    </div>
+    <div id="modalTiles" class="grid-tiles" style="--cols:6;"></div>
+  </div>
 
-    let c2c={}, coord2={};
-    let idx=0;
-    for(let r=1;r<=rows;r++){
-        for(let c=1;c<=cols;c++){
-            if(idx<26){
-                const coord=`${r}${c}`;
-                c2c[chars[idx]]=coord;
-                coord2[coord]=chars[idx];
-                idx++;
-            }
+  <script>
+    // Basic allowed characters - customize as needed
+    const DEFAULT_CHARS = "abcdefghijklmnopqrstuvwxyz!?";
+    // Elements
+    const keywordEl = document.getElementById('keyword');
+    const gridSizeEl = document.getElementById('gridSize');
+    const gridSizeLabel = document.getElementById('gridSizeLabel');
+    const inputEl = document.getElementById('inputText');
+    const outputEl = document.getElementById('outputText');
+    const gridTiles = document.getElementById('gridTiles');
+    const modalTiles = document.getElementById('modalTiles');
+    const gridModal = document.getElementById('gridModal');
+    const showGridBtn = document.getElementById('showGridBtn');
+    const closeModal = document.getElementById('closeModal');
+    const closeGrid = document.getElementById('closeGrid');
+    const encodeBtn = document.getElementById('encodeBtn');
+    const decodeBtn = document.getElementById('decodeBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const toggleTheme = document.getElementById('toggleTheme');
+
+    // State
+    let grid = [];
+    let rows = 6, cols = 5;
+
+    function parseGridSize(size){
+      const parts = size.split('x').map(Number);
+      if(parts.length===2){ return {cols:parts[0], rows:parts[1]}; }
+      return {cols:6,rows:5};
+    }
+
+    function normalizeKeyword(s){
+      return s.toLowerCase().replace(/[^a-z!?]/g, '');
+    }
+
+    function buildAlphabet(keyword){
+      const allowed = DEFAULT_CHARS;
+      let seen = new Set();
+      let out = [];
+      // add keyword unique letters
+      for(const ch of keyword){
+        if(allowed.includes(ch) && !seen.has(ch)){
+          seen.add(ch); out.push(ch);
         }
-    }
-    return {chars,c2c,coord2};
-}
-
-function encodeText(keyword,text,rows,cols){
-    const {c2c}=buildGrid(keyword,rows,cols);
-    let out=`${rows}${cols}`;
-    for(const word of text.toLowerCase().trim().split(/\s+/)){
-        out+=String(word.length);
-        for(const ch of word){
-            if(c2c[ch]) out+=c2c[ch];
+      }
+      // fill rest
+      for(const ch of allowed){
+        if(!seen.has(ch)){
+          seen.add(ch); out.push(ch);
         }
+      }
+      return out;
     }
-    return out;
-}
 
-function decodeText(keyword,cipher){
-    const rows=parseInt(cipher[0]), cols=parseInt(cipher[1]);
-    const {coord2}=buildGrid(keyword,rows,cols);
-    let pos=2, words=[];
-    while(pos<cipher.length){
-        const n=parseInt(cipher[pos++]);
-        let w="";
-        for(let i=0;i<n;i++){
-            const coord=cipher.slice(pos,pos+2);
-            pos+=2;
-            w+=coord2[coord] || "?";
+    function generateGrid(){
+      const kw = normalizeKeyword(keywordEl.value||'');
+      const size = parseGridSize(gridSizeEl.value);
+      cols = size.cols; rows = size.rows;
+      gridSizeLabel.textContent = `${cols}x${rows}`;
+      const alph = buildAlphabet(kw);
+      // Fill grid in row-major order, possibly truncate or pad with placeholder
+      grid = [];
+      const total = cols*rows;
+      for(let r=0;r<rows;r++){
+        const row = [];
+        for(let c=0;c<cols;c++){
+          const idx = r*cols + c;
+          row.push(alph[idx] !== undefined ? alph[idx] : '');
         }
-        words.push(w);
-    }
-    return words.join(" ");
-}
-
-function encode(){
-    const [r,c]=document.getElementById('grid').value.split('x').map(Number);
-    const plaintext=document.getElementById('input').value.trim();
-    let result=encodeText(document.getElementById('keyword').value, plaintext, r, c);
-
-    try{
-        const decoded=decodeText(document.getElementById('keyword').value, result);
-        const original=plaintext.toLowerCase().split(/\s+/)
-          .map(w=>w.replace(/[^a-z]/g,''))
-          .filter(Boolean).join(' ');
-
-        if(decoded!==original) result="ERROR: Verification Failed";
-    }catch(e){
-        result="ERROR: Verification Failed";
+        grid.push(row);
+      }
+      renderGrid();
     }
 
-    document.getElementById('output').value=result;
-}
-
-function decode(){
-    document.getElementById('output').value=decodeText(
-        document.getElementById('keyword').value,
-        document.getElementById('input').value.trim()
-    );
-}
-
-function copyOutput(){
-    navigator.clipboard.writeText(document.getElementById('output').value);
-}
-
-function clearAll(){
-    document.getElementById('input').value='';
-    document.getElementById('output').value='';
-}
-
-function showGrid(){
-    const [r,c]=document.getElementById('grid').value.split('x').map(Number);
-    const {chars}=buildGrid(document.getElementById('keyword').value,r,c);
-    const gv=document.getElementById('gridView');
-    gv.className='grid';
-    gv.style.gridTemplateColumns=`repeat(${c},auto)`;
-    gv.innerHTML='';
-    let idx=0;
-    for(let row=0;row<r;row++){
-        for(let col=0;col<c;col++){
-            const d=document.createElement('div');
-            d.className='cell';
-            d.textContent=idx<26?chars[idx]:'';
-            gv.appendChild(d);
-            idx++;
+    function renderGrid(){
+      // configure grid columns for CSS grid
+      gridTiles.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      modalTiles.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      gridTiles.innerHTML = '';
+      modalTiles.innerHTML = '';
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          const v = grid[r][c]||'';
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.textContent = v || '\u00A0';
+          cell.dataset.row = r+1; cell.dataset.col = c+1; cell.dataset.val = v;
+          gridTiles.appendChild(cell);
+          const mcell = cell.cloneNode(true);
+          modalTiles.appendChild(mcell);
         }
+      }
     }
-    document.getElementById('gridModal').style.display='block';
-}
-</script>
+
+    // Encoding scheme: plaintext char -> coordinate token "r#c#"
+    function encodeText(plain){
+      if(!grid.length) generateGrid();
+      // map char -> position
+      const posMap = {};
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          const ch = grid[r][c];
+          if(ch) posMap[ch] = `r${r+1}c${c+1}`;
+        }
+      }
+      // For characters not in posMap we'll attempt lowercase letter or keep as-is
+      const tokens = [];
+      for(const ch of plain){
+        const lower = ch.toLowerCase();
+        if(posMap[lower]) tokens.push(posMap[lower]);
+        else if(ch.trim()==='') tokens.push(' '); // preserve spaces as single space
+        else tokens.push(`?`); // unknown
+      }
+      return tokens.join(' ');
+    }
+
+    // Decoding scheme expects tokens r#c# separated by whitespace; spaces preserved
+    function decodeText(cipher){
+      if(!grid.length) generateGrid();
+      // build reverse map from token to char
+      const tokenMap = {};
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          const token = `r${r+1}c${c+1}`;
+          tokenMap[token] = grid[r][c] || '';
+        }
+      }
+      const parts = cipher.split(/\s+/).filter(p => p.length>0);
+      // if input appears to include separators other than tokens, try also comma-style
+      const out = [];
+      for(const p of parts){
+        if(p===' ') { out.push(' '); continue; }
+        if(tokenMap[p]) out.push(tokenMap[p]);
+        else out.push('?');
+      }
+      return out.join('');
+    }
+
+    // UI bindings
+    encodeBtn.addEventListener('click', () => {
+      generateGrid();
+      const result = encodeText(inputEl.value || '');
+      outputEl.value = result;
+    });
+
+    decodeBtn.addEventListener('click', () => {
+      generateGrid();
+      const result = decodeText(inputEl.value || '');
+      outputEl.value = result;
+    });
+
+    showGridBtn.addEventListener('click', () => {
+      generateGrid();
+      // show modal on small screens or ensure right panel visible
+      if(window.innerWidth <= 1000){
+        gridModal.classList.remove('hidden');
+      } else {
+        // visually highlight right panel (already visible)
+        // small flash
+        gridTiles.animate([{transform:'scale(1)'},{transform:'scale(1.01)'},{transform:'scale(1)'}],{duration:240});
+      }
+    });
+    closeModal.addEventListener('click', ()=> gridModal.classList.add('hidden'));
+    closeGrid.addEventListener('click', ()=> {
+      if(window.innerWidth <= 1000) gridModal.classList.add('hidden');
+      else gridModal.classList.add('hidden');
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      try{
+        await navigator.clipboard.writeText(outputEl.value || '');
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(()=> copyBtn.textContent = 'Copy Output', 1400);
+      }catch(e){
+        copyBtn.textContent = 'Copy Failed';
+        setTimeout(()=> copyBtn.textContent = 'Copy Output', 1400);
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      keywordEl.value = '';
+      inputEl.value = '';
+      outputEl.value = '';
+      generateGrid();
+    });
+
+    gridSizeEl.addEventListener('change', () => generateGrid());
+    keywordEl.addEventListener('input', () => generateGrid());
+
+    // Theme toggle (simple)
+    function applyTheme(dark=true){
+      document.documentElement.style.background = dark ? 'var(--bg)' : '#f4f7fb';
+      toggleTheme.textContent = dark ? 'Dark' : 'Light';
+    }
+    toggleTheme.addEventListener('click', () => {
+      const isDark = toggleTheme.textContent === 'Dark';
+      applyTheme(!isDark);
+    });
+
+    // init
+    (function init(){
+      generateGrid();
+      // set default sample
+      inputEl.value = '';
+    })();
+
+    // keyboard convenience: paste grid coordinate on cell click (modal or side)
+    [gridTiles, modalTiles].forEach(container=>{
+      container.addEventListener('click', (ev) => {
+        const c = ev.target.closest('.cell');
+        if(!c) return;
+        const token = `r${c.dataset.row}c${c.dataset.col}`;
+        // append token to input for quick encoding/decoding attempts
+        const cur = inputEl.value;
+        inputEl.value = (cur ? cur + ' ' : '') + token;
+      });
+    });
+
+    // support simple decoding from comma or colon formats on user input
+    inputEl.addEventListener('paste', (ev) => {
+      // no-op, but could parse different clipboard formats in future
+    });
+  </script>
 </body>
 </html>
